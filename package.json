@@ -1,0 +1,21 @@
+{
+  "name": "opencode-codex-usage-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { "./tui": "./index.tsx" },
+  "scripts": {
+    "test": "bun --conditions=browser test",
+    "typecheck": "tsc --noEmit",
+    "check:live": "bun run check-live.ts"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "1.18.34",
+    "@opentui/core": "0.4.5",
+    "@opentui/keymap": "0.4.5",
+    "@opentui/solid": "0.4.5",
+    "@types/bun": "^1.3.0",
+    "solid-js": "1.9.12",
+    "typescript": "^5.9.0"
+  }
+}
