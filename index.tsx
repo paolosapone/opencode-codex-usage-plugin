@@ -48,7 +48,7 @@ const tui: TuiPlugin = async (api) => {
     }
     return (
       <box flexShrink={1} minWidth={0} onMouseUp={handleMouseUp}>
-        <text fg={color()} wrapMode="none">{compactLabel(state(), dimensions().width, fiveHoursOnly())}</text>
+        <text selectable={false} fg={color()} wrapMode="none">{compactLabel(state(), dimensions().width, fiveHoursOnly())}</text>
       </box>
     )
   }

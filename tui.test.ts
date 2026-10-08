@@ -79,6 +79,7 @@ test("caricamento TSX, indicatore reattivo nei due slot e resize della TUI", asy
     expect(dialogOpened).toBe(false)
     await view.mockMouse.release(2, 0)
     expect(dialogOpened).toBe(true)
+    expect(view.renderer.getSelection()).toBeNull()
     await view.mockMouse.moveTo(100, 2)
     expect(dialogOpened).toBe(true)
     await view.mockMouse.click(2, 0)
