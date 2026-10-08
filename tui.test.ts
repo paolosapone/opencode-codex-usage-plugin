@@ -2,7 +2,8 @@ import { expect, test } from "bun:test"
 import { ensureRuntimePluginSupport } from "@opentui/solid/runtime-plugin-support/configure"
 import { RGBA } from "@opentui/core"
 import { testRender, type JSX } from "@opentui/solid"
-import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
+import type { TuiPluginApi, TuiDialogSelectProps } from "@opencode-ai/plugin/tui"
+import type { DisplayMode } from "./display"
 
 ensureRuntimePluginSupport()
 
@@ -18,13 +19,18 @@ test("caricamento TSX, indicatore reattivo nei due slot e resize della TUI", asy
   let dialogOpened = false
   let dialogClosed: (() => void) | undefined
   let dialogOpens = 0
+  let menu: TuiDialogSelectProps<DisplayMode> | undefined
+  const preferences = new Map<string, unknown>()
+  function choose(value: DisplayMode) {
+    menu!.onSelect!(menu!.options.find((option) => option.value === value)!)
+  }
   process.env.OPENCODE_AUTH_CONTENT = JSON.stringify({ openai: {
     type: "oauth", access: "test-token", accountId: "test-account", expires: Date.now() + 3600000,
   } })
   globalThis.fetch = (async () => {
     if (failure) return new Response("private error", { status: 500 })
     return Response.json({ rate_limit: {
-      primary_window: { used_percent: 100 - remaining, limit_window_seconds: 18000 },
+      primary_window: { used_percent: 100 - remaining, limit_window_seconds: 18000, reset_after_seconds: 16200 },
       secondary_window: { used_percent: 59, limit_window_seconds: 604800 },
     } })
   }) as unknown as typeof fetch
@@ -37,13 +43,15 @@ test("caricamento TSX, indicatore reattivo nei due slot e resize della TUI", asy
     slots: { register: (plugin: { slots: typeof slots }) => { Object.assign(slots, plugin.slots) } },
     keymap: { registerLayer: (layer: { commands: typeof commands }) => { commands.push(...layer.commands) } },
     event: { on: () => () => {} },
-    ui: { DialogAlert: () => null, dialog: {
+    kv: { ready: true, get: (key: string) => preferences.get(key), set: (key: string, value: unknown) => { preferences.set(key, value) } },
+    ui: { DialogAlert: () => null, DialogSelect: (props: TuiDialogSelectProps<DisplayMode>) => { menu = props; return null }, dialog: {
       get open() { return dialogOpened },
-      replace: (_render: () => JSX.Element, onClose?: () => void) => {
+      replace: (render: () => JSX.Element, onClose?: () => void) => {
         dialogClosed?.()
         dialogClosed = onClose
         dialogOpened = true
         dialogOpens++
+        render()
       },
       clear: () => { dialogOpened = false; dialogClosed?.(); dialogClosed = undefined },
     } },
@@ -57,20 +65,26 @@ test("caricamento TSX, indicatore reattivo nei due slot e resize della TUI", asy
     view = await testRender(() => slots.session_prompt_right(), { width: 120, height: 3 })
     await view.waitForFrame((frame) => frame.includes("5h: 72%"))
     expect(view.captureCharFrame()).not.toContain("7g:")
+    expect(view.captureCharFrame()).toContain("(4h 30m)")
     await view.mockMouse.click(2, 0, 2)
+    expect(menu!.current).toBe("5h-reset")
+    choose("all")
     await view.flush()
     expect(view.captureCharFrame()).toContain("7g: 41%")
+    expect(preferences.get("codex-usage.display-mode")).toBe("all")
     api.ui.dialog.clear()
     const opensBeforeClicks = dialogOpens
     await view.mockMouse.click(2, 0, 2)
+    choose("5h")
     await view.flush()
     expect(view.captureCharFrame()).toContain("5h: 72%")
     expect(view.captureCharFrame()).not.toContain("7g:")
-    expect(dialogOpens).toBe(opensBeforeClicks)
+    expect(dialogOpens).toBe(opensBeforeClicks + 1)
     view.resize(80, 3)
     await view.flush()
     expect(view.captureCharFrame()).toContain("Codex 72% rim.")
     await view.mockMouse.click(2, 0, 2)
+    choose("all")
     await view.flush()
     expect(view.captureCharFrame()).toContain("Codex 41% rim.")
     view.resize(120, 3)
@@ -102,6 +116,16 @@ test("caricamento TSX, indicatore reattivo nei due slot e resize della TUI", asy
     await view.flush()
     expect(view.captureCharFrame()).toContain("Codex 8% rim. *")
     expect(view.captureCharFrame()).not.toContain("private error")
+    await commands.find((command) => command.slashName === "codex-usage-view")!.run()
+    choose("5h-reset")
+    await view.flush()
+    expect(view.captureCharFrame()).toContain("8% (4h 30m) *")
+    // Reloading the plugin restores the selected mode from the same KV store.
+    await commands.find((command) => command.slashName === "codex-usage-view")!.run()
+    choose("5h")
+    await plugin.tui(api, undefined, {} as never)
+    await commands.filter((command) => command.slashName === "codex-usage-view").at(-1)!.run()
+    expect(menu!.current).toBe("5h")
   } finally {
     controller.abort()
     for (const fn of cleanup) fn()

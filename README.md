@@ -4,17 +4,21 @@ Plugin TUI locale per OpenCode, sviluppato con l'API plugin **1.18.34**.
 Mostra la quota rimanente ChatGPT/Codex a destra del prompt, sia nella home
 sia nelle conversazioni.
 
-La vista iniziale mostra solo la finestra **5h**:
+La vista iniziale mostra la quota rimanente della finestra **5h** e il tempo
+mancante al reset tra parentesi:
 
 ```text
-Codex · 5h: 72% rim.
+Codex · 5h: 87% (4h 30m)
 ```
 
-Con un click destro sull'indicatore si passa al riepilogo di tutte le finestre disponibili:
+Con un click destro sull'indicatore si apre un menu per scegliere direttamente
+la visualizzazione preferita. La scelta viene salvata anche dopo il riavvio:
 
-```text
-Codex · 5h: 72% · 7g: 41% rim.
-```
+| Vista | Esempio |
+| --- | --- |
+| Solo quota 5h | `Codex · 5h: 87% rim.` |
+| Quota 5h + tempo al reset (predefinita) | `Codex · 5h: 87% (4h 30m)` |
+| Tutte le finestre | `Codex · 5h: 87% · 7g: 41% rim.` |
 
 Le percentuali sono **rimanenti**, condivise da tutti i client Codex dell'account:
 non misurano il consumo della singola conversazione. Le finestre e le loro durate
@@ -53,15 +57,16 @@ oppure usare il gestore Plugins nella palette.
 
 - `/codex-usage`: apre i dettagli con tutte le finestre disponibili, il piano (se restituito dal servizio), i reset nel fuso locale e l'ultimo aggiornamento.
 - `/codex-usage-refresh`: aggiorna e apre i dettagli.
+- `/codex-usage-view`: apre il menu delle visualizzazioni, con la vista attiva evidenziata.
 - Click sinistro sull'indicatore: apre i dettagli **al rilascio del mouse**. Basta un solo `Esc` per chiuderli; un secondo click sull'indicatore li chiude, se raggiungibile.
-- Click destro: alterna la sola quota **5h** e tutte le finestre, colore compreso. Non apre i dettagli.
+- Click destro: apre lo stesso menu delle visualizzazioni. Selezionare una voce applica e salva la preferenza; `Esc` chiude senza modificarla.
 
-I due comandi sono disponibili anche nella palette, nella categoria **Codex**,
-come **Codex: quota e reset** e **Codex: aggiorna quota**.
+I tre comandi sono disponibili anche nella palette, nella categoria **Codex**,
+come **Codex: quota e reset**, **Codex: aggiorna quota** e **Codex: scegli visualizzazione**.
 
-La scelta della vista è condivisa tra home e conversazioni per tutta la durata
-del caricamento del plugin; non viene salvata e riparte da **5h** al caricamento
-successivo. Se la finestra 5h non è disponibile, compare `Codex · 5h: n/d`.
+La scelta della vista è condivisa tra home e conversazioni e salvata nella KV
+della TUI. Senza una preferenza valida si usa **Quota 5h + tempo al reset**.
+Se la finestra 5h non è disponibile, compare `Codex · 5h: n/d`.
 I dettagli mostrano sempre tutte le finestre, indipendentemente dalla vista scelta.
 
 ### Indicatore e colori
@@ -69,8 +74,17 @@ I dettagli mostrano sempre tutte le finestre, indipendentemente dalla vista scel
 Sotto **90 colonne di larghezza del terminale**, l'indicatore usa il formato compatto:
 
 ```text
-Codex 72% rim.
+87% (4h 30m)
 ```
+
+Le viste senza countdown mantengono il formato compatto `Codex 72% rim.`
+(la quota minima tra le finestre selezionate).
+
+Il tempo al reset è calcolato dalla scadenza restituita dal servizio e aggiornato
+ogni minuto, anche se l'aggiornamento della quota fallisce. I minuti sono
+arrotondati per eccesso; sotto un'ora compare, per esempio, `(42m)`.
+Se la scadenza manca compare `(reset n/d)`; se è raggiunta compare
+`(reset in attesa)` fino a nuovi dati, senza riportare automaticamente la quota al 100%.
 
 La percentuale e il colore dipendono dalle finestre della vista selezionata:
 solo 5h nella vista iniziale, oppure la percentuale più bassa nel riepilogo completo.

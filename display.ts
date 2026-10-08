@@ -1,11 +1,21 @@
 import type { UsageState } from "./monitor"
 
+export type DisplayMode = "5h" | "5h-reset" | "all"
+
+export function resetCountdown(resetAt: number | undefined, now = Date.now()): string {
+  if (resetAt === undefined || !Number.isFinite(resetAt)) return "reset n/d"
+  if (resetAt <= now) return "reset in attesa"
+  const minutes = Math.ceil((resetAt - now) / 60000)
+  const hours = Math.floor(minutes / 60)
+  return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`
+}
+
 export function visibleWindows(state: UsageState, fiveHoursOnly = false) {
   const windows = state.snapshot?.windows ?? []
   return fiveHoursOnly ? windows.filter((window) => window.label === "5h") : windows
 }
 
-export function compactLabel(state: UsageState, width: number, fiveHoursOnly = false): string {
+export function compactLabel(state: UsageState, width: number, mode: DisplayMode = "all", now = Date.now()): string {
   const data = state.snapshot
   if (!data) {
     if (state.error?.code === "auth" || state.error?.code === "expired") return "Codex · login"
@@ -13,8 +23,13 @@ export function compactLabel(state: UsageState, width: number, fiveHoursOnly = f
     return "Codex · …"
   }
   const suffix = state.error ? " *" : state.loading ? " …" : ""
-  const windows = visibleWindows(state, fiveHoursOnly)
+  const windows = visibleWindows(state, mode !== "all")
   if (!windows.length) return `Codex · 5h: n/d${suffix}`
+  if (mode === "5h-reset") {
+    const window = windows[0]
+    const quota = `${Math.floor(window.remaining)}% (${resetCountdown(window.resetAt, now)})`
+    return `${width < 90 ? "" : "Codex · 5h: "}${quota}${suffix}`
+  }
   if (width < 90) {
     return `Codex ${Math.floor(Math.min(...windows.map((w) => w.remaining)))}% rim.${suffix}`
   }
