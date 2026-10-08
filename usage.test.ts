@@ -47,6 +47,14 @@ describe("quota e credenziali", () => {
     expect(compactLabel(state, 120)).toBe("Codex · 5h: 72% · 7g: 41% rim. *")
     expect(details(state)).toContain("Dati precedenti, non aggiornati")
   })
+  test("vista 5h isola la quota breve anche su terminali stretti senza limitare i dettagli", () => {
+    const state = { loading: false, snapshot: parseUsage(payload) }
+    expect(compactLabel(state, 120, true)).toBe("Codex · 5h: 72% rim.")
+    expect(compactLabel(state, 80, true)).toBe("Codex 72% rim.")
+    expect(details(state)).toContain("7g: 41%")
+    state.snapshot.windows = state.snapshot.windows.filter((window) => window.label !== "5h")
+    expect(compactLabel(state, 80, true)).toBe("Codex · 5h: n/d")
+  })
 })
 
 describe("richieste e aggiornamenti", () => {

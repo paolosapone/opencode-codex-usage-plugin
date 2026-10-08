@@ -1,6 +1,11 @@
 import type { UsageState } from "./monitor"
 
-export function compactLabel(state: UsageState, width: number): string {
+export function visibleWindows(state: UsageState, fiveHoursOnly = false) {
+  const windows = state.snapshot?.windows ?? []
+  return fiveHoursOnly ? windows.filter((window) => window.label === "5h") : windows
+}
+
+export function compactLabel(state: UsageState, width: number, fiveHoursOnly = false): string {
   const data = state.snapshot
   if (!data) {
     if (state.error?.code === "auth" || state.error?.code === "expired") return "Codex · login"
@@ -8,10 +13,12 @@ export function compactLabel(state: UsageState, width: number): string {
     return "Codex · …"
   }
   const suffix = state.error ? " *" : state.loading ? " …" : ""
+  const windows = visibleWindows(state, fiveHoursOnly)
+  if (!windows.length) return `Codex · 5h: n/d${suffix}`
   if (width < 90) {
-    return `Codex ${Math.floor(Math.min(...data.windows.map((w) => w.remaining)))}% rim.${suffix}`
+    return `Codex ${Math.floor(Math.min(...windows.map((w) => w.remaining)))}% rim.${suffix}`
   }
-  return `Codex · ${data.windows.map((w) => `${w.label}: ${Math.floor(w.remaining)}%`).join(" · ")} rim.${suffix}`
+  return `Codex · ${windows.map((w) => `${w.label}: ${Math.floor(w.remaining)}%`).join(" · ")} rim.${suffix}`
 }
 
 export function details(state: UsageState): string {

@@ -15,7 +15,9 @@ rosso: fino al 10%. `*` indica dati precedenti dopo un errore, `…` un aggiorna
 
 - `/codex-usage`: dettagli, piano, reset nel fuso locale e ultimo aggiornamento.
 - `/codex-usage-refresh`: aggiorna e apre i dettagli.
-- Un clic sull'indicatore apre i dettagli, se la TUI ha il mouse abilitato.
+- Click sinistro sull'indicatore: apre i dettagli al rilascio del mouse e li lascia aperti fino a `Esc` (un secondo click sull'indicatore li chiude, se raggiungibile).
+- Click destro: alterna il riepilogo completo e la sola quota **5h**, colore compreso. Il modal mostra sempre tutti i dettagli.
+- La vista iniziale mostra solo la quota 5h; la scelta vale per home e conversazioni durante la sessione. Se la finestra 5h non è disponibile, compare `5h: n/d`.
 - Aggiornamento all'avvio, ogni 60s e a fine risposta (massimo uno ogni 15s per gli eventi idle).
 
 ## Caricamento
